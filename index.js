@@ -28,6 +28,8 @@ const addNewCard = () => {
 };
 
 
+
+
 const loadExistingCards = () => {
     const taskData = JSON.parse(localStorage.getItem("TaskyCA"));
     if(!taskData) return;
@@ -49,20 +51,93 @@ const deleteCard = (id) => {
 
 };
 
+const editCard = (id) => {
+    const card = document.getElementById(id);
+    const taskTitle = card.childNodes[1].childNodes[5].childNodes[1];
+    const taskDescription = card.childNodes[1].childNodes[5].childNodes[3];
+    const taskType = card.childNodes[1].childNodes[5].childNodes[5];
+    const submitButton = card.childNodes[1].childNodes[7].childNodes[1];
+    taskTitle.setAttribute("contenteditable","true");
+    taskDescription.setAttribute("contenteditable","true");
+    taskType.setAttribute("contenteditable","true");
+    submitButton.setAttribute("onclick","saveEdit(this.name)");
+    submitButton.innerHTML= "Save Changes";
+}
+
+const saveEdit = (id) =>{
+    console.log("saveEdit is called");
+    const card = document.getElementById(id);
+    const taskTitle = card.childNodes[1].childNodes[5].childNodes[1];
+    const taskDescription = card.childNodes[1].childNodes[5].childNodes[3];
+    const taskType = card.childNodes[1].childNodes[5].childNodes[5];
+    const submitButton = card.childNodes[1].childNodes[7].childNodes[1];
+    
+    const updatedData = {
+        title : taskTitle.innerHTML,
+        description : taskDescription.innerHTML,
+        type : taskType.innerHTML,
+    };
+    const updatedGlobalTaskData = globalTaskData.map((task)=>{
+        if(task.id === id){
+            return {...task, ...updatedData};
+        }
+        return task;
+    });
+    globalTaskData = updatedGlobalTaskData;
+    saveToLocalStorage();
+    taskTitle.setAttribute("contenteditable","false");
+    taskDescription.setAttribute("contenteditable","false");
+    taskType.setAttribute("contenteditable","false");
+    submitButton.setAttribute("onclick","openTask(this.name)");
+    submitButton.innerHTML= "Open Task";
+};
+
+const openTask = (id) => {
+    let taskToOpen = {};
+    globalTaskData.map( (task) =>{
+        if(task.id === id){
+            taskToOpen = task;
+        }
+    });
+    console.log(taskToOpen);
+    document.getElementById("openTaskModalTitle").innerHTML = taskToOpen.title;
+    document.getElementById("openTaskModalImage").setAttribute("src",taskToOpen.image)
+    document.getElementById("openTaskModalDescription").innerHTML = taskToOpen.description;
+    document.getElementById("openTaskModalType").innerHTML = taskToOpen.type;
+    
+    var myModal = new bootstrap.Modal(document.getElementById('openTaskModal'));
+    myModal.show();
+};
+const searchResult = () =>{
+    const searchQuery = document.getElementById("searchInput").value.toLowerCase()
+    searchResultData = globalTaskData.filter((task)=>{
+        return (task.title.toLowerCase().includes(searchQuery) || task.description.toLowerCase().includes(searchQuery) || task.type.toLowerCase().includes(searchQuery))
+    })
+    taskContainer.innerHTML = "";
+    searchResultData.map((taskData) => {
+        const newCard = generateCard(taskData);
+        taskContainer.insertAdjacentHTML("beforeend",newCard);
+    })
+    document.getElementById("closeSearch").setAttribute("class","btn btn-danger");
+};
+
+const closeSearchResults = () => {
+    taskContainer.innerHTML = "";
+    globalTaskData.map((taskData) => {
+        const newCard = generateCard(taskData);
+        taskContainer.insertAdjacentHTML("beforeend",newCard);
+    })
+    document.getElementById("closeSearch").setAttribute("class","btn btn-danger collapse");
+};
 const generateCard = (taskData) => {
-    return `<div id= ${taskData.id} class="col-md-6 col-lg-4">
-        <div class="card" >
-            <div class="card-header d-flex justify-content-end ">
-                <a href="#" class="btn btn-outline-info ">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
-                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
-                    </svg>
+    return `<div id= ${taskData.id} class="col-md-6 col-lg-4 mb-3">
+        <div class="card shadow-lg" >
+            <div class="card-header d-flex justify-content-end gap-2">
+                <a href="#" class="btn btn-outline-info " name="${taskData.id}"onclick="editCard(this.name)">
+                    <i class="fas fa-pencil-alt"></i>
                 </a>
                 <a href="#" class="btn btn-outline-danger" name="${taskData.id}" onclick="deleteCard(this.name)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                    </svg>
+                    <i class="fas fa-trash-alt"></i>
                 </a>
             </div>
             <img src= ${taskData.image} class="card-img-tcop m-3 mb-0 rounded" alt="bird">
@@ -72,7 +147,7 @@ const generateCard = (taskData) => {
             <span class="badge bg-primary">${taskData.type}</span>
             </div>
             <div class="card-footer">
-                <a href="#" class="btn btn-outline-primary">Open Task</a>
+                <a href="#" class="btn btn-outline-primary" name="${taskData.id}" onclick="openTask(this.name)">Open Task</a>
             </div>
         </div>
     </div>`;
